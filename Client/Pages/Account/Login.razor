@@ -3,7 +3,8 @@
 @inherits FormPage<Login, Client.Services.IAccountService, LoginDto>
 @layout StandaloneNarrowLayout
 
-<DocTitle Title="Log in"/>
+<DocHead Title="Log in"
+         Description="Just another Blazor site with a login page"/>
 
 <StandardForm Model="@Model"
               OnSubmit="OnSubmit"

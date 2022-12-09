@@ -2,6 +2,11 @@
 @attribute [Route(Urls.Home)]
 @attribute [AllowAnonymous]
 
-<DocTitle Title="Home"/>
+<DocHead Title="Home"
+         Description="Just another Blazor site"/>
+
+<HeadContent>
+	<meta name="just a test meta" content="just a test value"/>
+</HeadContent>
 
 <Heading1>Home</Heading1>

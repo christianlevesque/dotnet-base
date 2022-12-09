@@ -1,0 +1,24 @@
+<DocTitle Title="@Title"
+          Subtitle="@Subtitle"/>
+
+<HeadContent>
+	<meta property="og:site_name" content="@SiteOptions.Value.Name"/>
+	<meta property="og:url" content="@($"{SiteOptions.Value.Url}/{NavManager.ToBaseRelativePath(NavManager.Uri)}")"/>
+	<meta property="og:type" content="@GenerateOgType()"/>
+
+	@if (!string.IsNullOrEmpty(Title))
+	{
+		<meta property="og:title" content="@Title"/>
+	}
+
+	@if (!string.IsNullOrEmpty(Description))
+	{
+		<meta property="og:description" content="@Description"/>
+	}
+
+	@if (!string.IsNullOrEmpty(HeaderImage))
+	{
+		<meta property="og:image" content="@($"{SiteOptions.Value.Url}{HeaderImage}")"/>
+		<meta property="og:image:alt" content="@ImageAlt"/>
+	}
+</HeadContent>
