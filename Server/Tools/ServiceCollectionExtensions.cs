@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using MudBlazor.Services;
 
 namespace Server.Tools;
 
@@ -11,6 +12,7 @@ public static class ServiceCollectionExtensions
 	public static IServiceCollection AddServerServices(this IServiceCollection services, IHostEnvironment env)
 	{
 		return services
+			.AddMudServices()
 			.AddRoutingServices(env)
 			.AddServerOptions();
 	}
@@ -20,6 +22,7 @@ public static class ServiceCollectionExtensions
 		services
 			.AddRouting()
 			.AddControllers();
+		services.AddRazorPages();
 
 		// TODO: remove or disable if using Blazor client
 		services
