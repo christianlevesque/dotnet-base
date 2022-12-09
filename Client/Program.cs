@@ -9,6 +9,7 @@ using Microsoft.Extensions.Options;
 using MudBlazor.Services;
 using Client;
 using Client.Tools.Options;
+using Microsoft.Extensions.Configuration;
 
 var builder = WebAssemblyHostBuilder.CreateDefault(args);
 builder.RootComponents.Add<App>("#app");
@@ -16,26 +17,35 @@ builder.RootComponents.Add<HeadOutlet>("head::after");
 
 builder.Logging.AddConfiguration(builder.Configuration.GetSection("Logging"));
 
-builder.Services
-       .AddOptions()
-       .Configure<ApiOptions>(o =>
-       {
-	       o.BaseUrl = builder.Configuration.GetSection("Api:BaseUrl").Value;
-       })
-       .AddAuthorizationCore()
-       .AddBlazoredLocalStorage()
-       .AddMudServices()
-       .AddScoped(sp =>
-       {
-	       var options = sp.GetRequiredService<IOptions<ApiOptions>>()
-	                       .Value;
-	       var uriKind = options.BaseUrl.Contains("http")
-		                     ? UriKind.Absolute
-		                     : UriKind.Relative;
-
-	       return new HttpClient { BaseAddress = new Uri(options.BaseUrl, uriKind) };
-       })
-       .AutoinjectServicesFromAssembly(typeof(Program).Assembly);
+ConfigureServices(builder.Services, builder.Configuration);
 
 await builder.Build()
              .RunAsync();
+
+static void ConfigureServices(IServiceCollection services, IConfiguration config)
+{
+	services.AddOptions()
+		.Configure<ApiOptions>(o =>
+		{
+			o.BaseUrl = config.GetSection("Api:BaseUrl").Value;
+		})
+		.Configure<SiteOptions>(o =>
+		{
+			o.Name = config.GetSection("Site:Name").Value;
+			o.Url = config.GetSection("Site:Url").Value;
+		})
+		.AddAuthorizationCore()
+		.AddBlazoredLocalStorage()
+		.AddMudServices()
+		.AddScoped(sp =>
+		{
+			var apiOptions = sp.GetRequiredService<IOptions<ApiOptions>>().Value;
+			var siteOptions = sp.GetRequiredService<IOptions<SiteOptions>>().Value;
+			var uri = apiOptions.BaseUrl.Contains("http")
+				? apiOptions.BaseUrl
+				: $"{siteOptions.Url}{apiOptions.BaseUrl}";
+
+			return new HttpClient { BaseAddress = new Uri(uri, UriKind.Absolute) };
+		})
+		.AutoinjectServicesFromAssembly(typeof(Program).Assembly);
+}
