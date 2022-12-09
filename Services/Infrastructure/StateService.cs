@@ -2,6 +2,7 @@
 using System.Linq;
 using System.Threading.Tasks;
 using Autoinjector;
+using Core;
 using Repositories.Infrastructure;
 using Services.Errors;
 using Core.Infrastructure;
@@ -21,7 +22,7 @@ public class StateService
 	}
 
 	/// <inheritdoc />
-	public override async Task<ServiceResult> Add(StateDto model)
+	public override async Task<ServiceResult<Guid>> Add(StateDto model)
 	{
 		try
 		{
@@ -29,14 +30,14 @@ public class StateService
 		}
 		catch (Exception e)
 		{
-			return CreateErrorResult(e);
+			return CreateErrorResult<Guid>(e);
 		}
 
 		return await base.Add(model);
 	}
 
 	/// <inheritdoc />
-	public override async Task<ServiceResult> Edit(StateDto model)
+	public override async Task<ServiceResult<bool>> Edit(StateDto model)
 	{
 		try
 		{
@@ -44,7 +45,7 @@ public class StateService
 		}
 		catch (Exception e)
 		{
-			return CreateErrorResult(e);
+			return CreateErrorResult<bool>(e);
 		}
 
 		return await base.Edit(model);

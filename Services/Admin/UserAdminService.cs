@@ -37,7 +37,7 @@ public class UserAdminService : IUserAdminService
 		_emailService = emailService;
 	}
 
-	public async Task<ServiceResult> GetAllUsers(Filter filter)
+	public async Task<ServiceResult<PagedDto<ApplicationUserDto>>> GetAllUsers(Filter filter)
 	{
 		var users = await _userRepo.GetPagified(filter);
 
@@ -53,16 +53,16 @@ public class UserAdminService : IUserAdminService
 			TotalCount = await _userRepo.GetCount(filter)
 		};
 
-		return ServiceResult.Ok(result);
+		return ServiceResult<PagedDto<ApplicationUserDto>>.Ok(result);
 	}
 
-	public async Task<ServiceResult> GetUserData(string userId)
+	public async Task<ServiceResult<ApplicationUserDto>> GetUserData(string userId)
 	{
 		var user = await _userRepo.FindById(userId);
-		return ServiceResult.Ok(await _userDtoAdapter.MapToDto(user));
+		return ServiceResult<ApplicationUserDto>.Ok(await _userDtoAdapter.MapToDto(user));
 	}
 
-	public async Task<ServiceResult> UpdateUserEmail(UserChangeEmailDto data)
+	public async Task<ServiceResult<bool>> UpdateUserEmail(UserChangeEmailDto data)
 	{
 		// Find user
 		var user = await _userRepo.FindById(data.UserId);
@@ -78,28 +78,28 @@ public class UserAdminService : IUserAdminService
 
 		// Send verification code
 		await _emailService.SendEmailChangeConfirmationEmail(user.UserName, user.PendingEmail, user.Id, code);
-		return ServiceResult.Ok();
+		return ServiceResult<bool>.Ok();
 	}
 
-	public async Task<ServiceResult> UpdateUserPassword(UserChangePasswordDto data)
+	public async Task<ServiceResult<bool>> UpdateUserPassword(UserChangePasswordDto data)
 	{
 		var user = await _userRepo.FindById(data.UserId);
 
 		var result = await _userService.ChangePasswordAsync(user, data.NewPassword);
 
 		return result.Succeeded
-			       ? ServiceResult.Ok()
-			       : ServiceResult.Unprocessable(result.Errors.First().Description);
+			       ? ServiceResult<bool>.Ok()
+			       : ServiceResult<bool>.Unprocessable(result.Errors.First().Description);
 	}
 
-	public Task<ServiceResult> GetAvailableRoles()
+	public Task<ServiceResult<IEnumerable<string>>> GetAvailableRoles()
 	{
 		var roles = _roleManager.Roles.Select(r => r.Name);
-		var result = ServiceResult.Ok(roles);
+		var result = ServiceResult<IEnumerable<string>>.Ok(roles);
 		return Task.FromResult(result);
 	}
 
-	public async Task<ServiceResult> AddUserToRole(UserUpdateRolesDto data)
+	public async Task<ServiceResult<bool>> AddUserToRole(UserUpdateRolesDto data)
 	{
 		var user = await _userRepo.FindById(data.UserId);
 		var roles = await _userService.GetRolesAsync(user);
@@ -108,24 +108,24 @@ public class UserAdminService : IUserAdminService
 			var removeFromRolesResult = await _userService.RemoveFromRolesAsync(user, roles);
             if (!removeFromRolesResult.Succeeded)
             {
-                return ServiceResult.Unprocessable("Failed to remove user from roles");
+                return ServiceResult<bool>.Unprocessable("Failed to remove user from roles");
             }
 		}
 
 		var result = await _userService.AddToRolesAsync(user, data.Roles);
 
 		return result.Succeeded
-			       ? ServiceResult.Ok()
-			       : ServiceResult.Unprocessable("Failed to add user to roles");
+			       ? ServiceResult<bool>.Ok()
+			       : ServiceResult<bool>.Unprocessable("Failed to add user to roles");
 	}
 }
 
 public interface IUserAdminService
 {
-	Task<ServiceResult> GetAllUsers(Filter filter);
-	Task<ServiceResult> GetUserData(string userId);
-	Task<ServiceResult> UpdateUserEmail(UserChangeEmailDto data);
-	Task<ServiceResult> UpdateUserPassword(UserChangePasswordDto data);
-	Task<ServiceResult> GetAvailableRoles();
-	Task<ServiceResult> AddUserToRole(UserUpdateRolesDto data);
+	Task<ServiceResult<PagedDto<ApplicationUserDto>>> GetAllUsers(Filter filter);
+	Task<ServiceResult<ApplicationUserDto>> GetUserData(string userId);
+	Task<ServiceResult<bool>> UpdateUserEmail(UserChangeEmailDto data);
+	Task<ServiceResult<bool>> UpdateUserPassword(UserChangePasswordDto data);
+	Task<ServiceResult<IEnumerable<string>>> GetAvailableRoles();
+	Task<ServiceResult<bool>> AddUserToRole(UserUpdateRolesDto data);
 }

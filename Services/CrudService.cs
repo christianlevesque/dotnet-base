@@ -26,27 +26,27 @@ public abstract class CrudService<TEntity, TDto, TKey, TRepo> : ICrudService<TDt
 	}
 
 	/// <inheritdoc />
-	public virtual async Task<ServiceResult> Add(TDto model)
+	public virtual async Task<ServiceResult<TKey>> Add(TDto model)
 	{
 		// Verify honeypot
 		if (UsesHoneypot && model is HoneypotDto<TKey> { IsSpambot: true })
 		{
-			return ServiceResult.Ok();
+			return ServiceResult<TKey>.Ok(default);
 		}
 
 		var entity = await Adapter.MapAddDto(model);
 		try
 		{
-			return ServiceResult.Ok(await Repo.Create(entity));
+			return ServiceResult<TKey>.Ok(await Repo.Create(entity));
 		}
 		catch (Exception e)
 		{
-			return CreateErrorResult(e);
+			return CreateErrorResult<TKey>(e);
 		}
 	}
 
 	/// <inheritdoc />
-	public virtual async Task<ServiceResult> Edit(TDto model)
+	public virtual async Task<ServiceResult<bool>> Edit(TDto model)
 	{
 		TEntity entity;
 		try
@@ -55,7 +55,7 @@ public abstract class CrudService<TEntity, TDto, TKey, TRepo> : ICrudService<TDt
 		}
 		catch (Exception e)
 		{
-			return CreateErrorResult(e);
+			return CreateErrorResult<bool>(e);
 		}
 
 		await Adapter.MapEditDto(model, entity);
@@ -64,16 +64,16 @@ public abstract class CrudService<TEntity, TDto, TKey, TRepo> : ICrudService<TDt
 		try
 		{
 			await Repo.Update(entity);
-			return ServiceResult.Ok();
+			return ServiceResult<bool>.Ok(true);
 		}
 		catch (Exception e)
 		{
-			return CreateErrorResult(e);
+			return CreateErrorResult<bool>(e);
 		}
 	}
 
 	/// <inheritdoc />
-	public virtual async Task<ServiceResult> Get(TKey id)
+	public virtual async Task<ServiceResult<TDto>> Get(TKey id)
 	{
 		TEntity entity;
 		try
@@ -82,14 +82,16 @@ public abstract class CrudService<TEntity, TDto, TKey, TRepo> : ICrudService<TDt
 		}
 		catch (Exception e)
 		{
-			return CreateErrorResult(e);
+			return CreateErrorResult<TDto>(e);
 		}
 
-		return ServiceResult.Ok((await Adapter.MapToDto(entity))!);
+		var mapped = await Adapter.MapToDto(entity);
+
+		return ServiceResult<TDto>.Ok(mapped);
 	}
 
 	/// <inheritdoc />
-	public virtual async Task<ServiceResult> Get(Filter? filter = null)
+	public virtual async Task<ServiceResult<PagedDto<TDto>>> Get(Filter? filter = null)
 	{
 		try
 		{
@@ -108,29 +110,29 @@ public abstract class CrudService<TEntity, TDto, TKey, TRepo> : ICrudService<TDt
 				TotalCount = await Repo.GetCount(filter)
 			};
 
-			return ServiceResult.Ok(dto);
+			return ServiceResult<PagedDto<TDto>>.Ok(dto);
 		}
 		catch (Exception e)
 		{
-			return CreateErrorResult(e);
+			return CreateErrorResult<PagedDto<TDto>>(e);
 		}
 	}
 
 	/// <inheritdoc />
-	public virtual async Task<ServiceResult> Delete(TKey id)
+	public virtual async Task<ServiceResult<bool>> Delete(TKey id)
 	{
 		try
 		{
 			await Repo.Delete(id);
-			return ServiceResult.Ok();
+			return ServiceResult<bool>.Ok(true);
 		}
 		catch (Exception e)
 		{
-			return CreateErrorResult(e);
+			return CreateErrorResult<bool>(e);
 		}
 	}
 
-	protected static ServiceResult CreateErrorResult(Exception exception)
+	protected static ServiceResult<T> CreateErrorResult<T>(Exception exception)
 	{
 		var error = ServiceError.Unknown;
 		var message = new StringBuilder(ErrorMessages.ContactIt);
@@ -164,7 +166,7 @@ public abstract class CrudService<TEntity, TDto, TKey, TRepo> : ICrudService<TDt
 				break;
 		}
 
-		return ServiceResult.Failure(error, message.ToString());
+		return ServiceResult<T>.Failure(error, message.ToString());
 
 		void ResetMessage(StringBuilder sb, string errorMessage)
 		{

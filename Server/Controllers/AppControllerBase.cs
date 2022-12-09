@@ -4,7 +4,6 @@ using System.Threading.Tasks;
 using Core;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
-using Services;
 using Services.Errors;
 
 namespace Server.Controllers;
@@ -21,8 +20,8 @@ public class AppControllerBase<TController, TService> : ControllerBase
 		Service = service;
 	}
 
-	protected async Task<IActionResult> ProcessServiceCall(
-		Func<Task<ServiceResult>> action,
+	protected async Task<IActionResult> ProcessServiceCall<T>(
+		Func<Task<ServiceResult<T>>> action,
 	    HttpStatusCode successStatusCode = HttpStatusCode.OK)
 	{
 		try
@@ -45,7 +44,7 @@ public class AppControllerBase<TController, TService> : ControllerBase
 	}
 
 	protected async Task<IActionResult> ProcessServiceCallReturningFile(
-		Func<Task<ServiceResult>> action,
+		Func<Task<ServiceResult<byte[]>>> action,
 	    string filename,
 	    string mimeType)
 	{
@@ -57,7 +56,7 @@ public class AppControllerBase<TController, TService> : ControllerBase
 				return GenerateErrorResponse(result);
 			}
 
-			var file = (byte[])result.Result!;
+			var file = result.Result!;
 			Response.Headers.Add("Content-Disposition", $"attachment; filename=${filename}");
 			return new FileContentResult(file, mimeType);
 		}
@@ -68,7 +67,7 @@ public class AppControllerBase<TController, TService> : ControllerBase
 		}
 	}
 
-	protected IActionResult GenerateErrorResponse(ServiceResult result)
+	protected IActionResult GenerateErrorResponse<T>(ServiceResult<T> result)
 	{
 		HttpStatusCode status;
 		var errorMessage = result.ErrorMessage;
