@@ -1,6 +1,9 @@
 using System;
+using Client.State;
+using Client.Tools.Options;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using MudBlazor.Services;
@@ -9,28 +12,25 @@ namespace Server.Tools;
 
 public static class ServiceCollectionExtensions
 {
-	public static IServiceCollection AddServerServices(this IServiceCollection services, IHostEnvironment env)
+	public static IServiceCollection AddServerServices(this IServiceCollection services, IHostEnvironment env, IConfiguration config)
 	{
 		return services
 			.AddMudServices()
 			.AddRoutingServices(env)
-			.AddServerOptions();
+			.AddServerOptions(config);
 	}
 
 	private static IServiceCollection AddRoutingServices(this IServiceCollection services, IHostEnvironment env)
 	{
 		services
 			.AddRouting()
-			.AddControllers();
+			.AddControllersWithViews();
 		services.AddRazorPages();
+		services.AddServerSideBlazor();
 
-		// TODO: remove or disable if using Blazor client
-		services
-			.AddRazorPages(o =>
-			{
-				o.Conventions.AuthorizeFolder("/");
-			})
-			.AddRazorRuntimeCompilation();
+		services.AddScoped<LoadingStateProvider>()
+			.AddScoped<AccountStateProvider>()
+			.AutoinjectServicesFromAssembly(typeof(ServiceCollectionExtensions).Assembly);
 
 		if (env.IsDevelopment())
 		{
@@ -49,9 +49,8 @@ public static class ServiceCollectionExtensions
 		return services;
 	}
 
-	private static IServiceCollection AddServerOptions(this IServiceCollection services)
+	private static IServiceCollection AddServerOptions(this IServiceCollection services, IConfiguration config)
 	{
-		// TODO: remove or disable if using SSR
 		// Changes the invalid model state response
 		services.Configure<ApiBehaviorOptions>(
 			options =>
@@ -60,11 +59,12 @@ public static class ServiceCollectionExtensions
 			}
 		);
 
-		// TODO: remove or disable if using SSR
 		services.Configure<DataProtectionTokenProviderOptions>(o =>
 		{
 			o.TokenLifespan = TimeSpan.FromDays(30);
 		});
+
+		services.Configure<SiteOptions>(config.GetSection("Site"));
 
 		return services;
 	}

@@ -1,12 +1,15 @@
+using System;
+using System.IO;
+using System.Security.Claims;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Components;
 using Microsoft.Extensions.Logging;
 using Microsoft.JSInterop;
 using MudBlazor;
-using Client.Services;
 using Client.Shared;
 using Client.Shared.Modals.MyAccount;
 using Client.Tools;
+using Core.Account;
 
 namespace Client.Pages.Dashboard.MyAccount;
 
@@ -38,8 +41,9 @@ public partial class PersonalData
 		Logger.LogInformation("Downloading personal data");
 
 		_isLoading = true;
-		await using var data = await Service.GetPersonalData();
-		using var dataWrapper = new DotNetStreamReference(data);
+		var data = await Service.GetPersonalData(new ClaimsPrincipal());
+		using var stream = new MemoryStream(data.Result ?? Array.Empty<byte>());
+		using var dataWrapper = new DotNetStreamReference(stream);
 		await Interop.InvokeVoidAsync("downloadFileFromStream", "PersonalData.json", dataWrapper);
 		_isLoading = false;
 	}

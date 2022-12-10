@@ -7,8 +7,8 @@ using Client.Services.Infrastructure;
 
 namespace Client.Services;
 
-public abstract class CrudService<TViewDto, TAddDto, TEditDto, TKey, TService> : BaseHttpService<TService>, ICrudService<TViewDto, TAddDto, TEditDto, TKey>
-	where TEditDto : EntityBase<TKey>
+public abstract class CrudService<TDto, TKey, TService> : BaseHttpService<TService>, ICrudService<TDto, TKey>
+	where TDto : EntityBase<TKey>
 	where TKey : struct, IEquatable<TKey>
 {
 	protected string AddSuccessMessage = string.Empty;
@@ -23,27 +23,37 @@ public abstract class CrudService<TViewDto, TAddDto, TEditDto, TKey, TService> :
 	{
 	}
 
-	public Task<TKey> Add(TAddDto model) => SendRequest<TKey>(Endpoint, AddSuccessMessage, input: model, method: HttpMethod.Post);
+	/// <inheritdoc/>
+	public Task<ServiceResult<TKey>> Add(TDto model) => SendRequest<TKey>(Endpoint, AddSuccessMessage, input: model, method: HttpMethod.Post);
 
-	public Task<bool> Edit(TEditDto model) => SendRequest($"{Endpoint}/{model.Id}", EditSuccessMessage, input: model, method: HttpMethod.Put);
+	/// <inheritdoc/>
+	public Task<ServiceResult<bool>> Edit(TDto model) => SendRequest($"{Endpoint}/{model.Id}", EditSuccessMessage, input: model, method: HttpMethod.Put);
 
-	public Task<TViewDto?> Get(TKey id) => SendRequest<TViewDto>($"{Endpoint}/{id}");
+	/// <inheritdoc/>
+	public Task<ServiceResult<TDto>> Get(TKey id) => SendRequest<TDto>($"{Endpoint}/{id}");
 
-	public async Task<PagedDto<TViewDto>> Get(Filter? filter = null)
+	/// <inheritdoc/>
+	/// <remarks>
+	/// The <see cref="PagedDto{TDto}"/> returned from this method is nullable. However, to make table paging simpler, we want this to never be null. So this method ensures that the <see cref="PagedDto{TDto}"/> is always initialized, even if it's null in the <see cref="ServiceResult{T}"/>.
+	/// </remarks>
+	public async Task<ServiceResult<PagedDto<TDto>>> Get(Filter? filter = null)
 	{
 		if (filter?.SearchTerm != null)
 		{
 			filter.SearchTerm = filter.SearchTerm.ToLower();
 		}
 
-		return await SendRequest<PagedDto<TViewDto>>(Endpoint, input: filter) ?? new PagedDto<TViewDto>();
+		var response = await SendRequest<PagedDto<TDto>>(Endpoint, input: filter);
+		response.Result ??= new PagedDto<TDto>();
+		return response;
 	}
 
-	public Task<bool> Delete(TKey id) => SendRequest($"{Endpoint}/{id}", DeleteSuccessMessage, method: HttpMethod.Delete);
+	/// <inheritdoc/>
+	public Task<ServiceResult<bool>> Delete(TKey id) => SendRequest($"{Endpoint}/{id}", DeleteSuccessMessage, method: HttpMethod.Delete);
 }
 
-public abstract class CrudService<TViewDto, TAddDto, TEditDto, TService> : CrudService<TViewDto, TAddDto, TEditDto, Guid, TService>
-	where TEditDto : EntityBase
+public abstract class CrudService<TDto, TService> : CrudService<TDto, Guid, TService>
+	where TDto : EntityBase
 {
 	/// <inheritdoc />
 	protected CrudService(string endpoint,

@@ -2,6 +2,7 @@ using System;
 using System.IO;
 using System.Net;
 using System.Net.Http;
+using System.Security.Claims;
 using System.Threading.Tasks;
 using Core.Account;
 using Autoinjector;
@@ -10,6 +11,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Client.Services.Infrastructure;
 using Client.State;
+using Core;
 
 namespace Client.Services;
 
@@ -25,7 +27,7 @@ public class AccountService : BaseHttpService<AccountService>, IAccountService
 		_accountState = accountState;
 	}
 
-	public async Task<bool> Login(LoginDto login)
+	public async Task<ServiceResult<TokenDto>> Login(LoginDto login)
 	{
 		Logger.LogInformation("Initializing login process");
 		try
@@ -33,8 +35,8 @@ public class AccountService : BaseHttpService<AccountService>, IAccountService
 			var result = await SendWithRawResponse($"{Endpoint}/login", input: login, method: HttpMethod.Post);
 			if (!result.IsSuccessStatusCode)
 			{
-				await HandleFailureResponse(result);
-				return false;
+				var errorMessage = await HandleFailureResponse(result);
+				return ServiceResult<TokenDto>.Failure(errorMessage);
 			}
 
 			var response = await GetResponse<TokenDto>(result);
@@ -47,40 +49,47 @@ public class AccountService : BaseHttpService<AccountService>, IAccountService
 				await _authState.GetAuthenticationStateAsync();
 
 				// Now we can load the user info
-				await LoadUserInfo();
-				Logger.LogInformation("User logged in successfully");
-				return true;
+				var loginResult = await GetUserInfo( new ClaimsPrincipal());
+				if (loginResult.WasSuccessful)
+				{
+					Logger.LogInformation("User logged in successfully");
+                    return ServiceResult<TokenDto>.Ok(response);
+				}
 			}
 		}
 		catch (Exception e)
 		{
 			Logger.LogError(e, "Failed to log in user");
 			Snackbar.Error(e.Message);
-			return false;
+			return ServiceResult<TokenDto>.Failure(e.Message);
 		}
 
 		Snackbar.Error(GenericErrorMessage);
-		return false;
+		return ServiceResult<TokenDto>.Failure(GenericErrorMessage);
 	}
 
-	public Task<bool> Register(RegisterDto account) => SendRequest(Endpoint, "Registered successfully!", input: account, method: HttpMethod.Post);
+	public Task<ServiceResult<bool>> Register(RegisterDto account)
+	{
+		
+		return SendRequest(Endpoint, "Registered successfully!", input: account, method: HttpMethod.Post);
+	}
 
-	public Task<bool> ConfirmAccount(ConfirmAccountDto account) => SendRequest($"{Endpoint}/confirm", "Account confirmed successfully!", input: account, method: HttpMethod.Post);
+	public Task<ServiceResult<bool>> ConfirmAccount(ConfirmAccountDto account) => SendRequest($"{Endpoint}/confirm", "Account confirmed successfully!", input: account, method: HttpMethod.Post);
 
-	public Task<bool> ChangePassword(ChangePasswordDto account) => SendRequest($"{Endpoint}/password", "Password changed successfully!", input: account, method: HttpMethod.Post);
+	public Task<ServiceResult<bool>> ChangePassword(ChangePasswordDto account, ClaimsPrincipal p) => SendRequest($"{Endpoint}/password", "Password changed successfully!", input: account, method: HttpMethod.Post);
 
-	public Task<bool> ForgotPassword(ForgotPasswordDto account) => SendRequest($"{Endpoint}/password", "Password reset requested successfully!", input: account, method: HttpMethod.Delete);
+	public Task<ServiceResult<bool>> ForgotPassword(ForgotPasswordDto account) => SendRequest($"{Endpoint}/password", "Password reset requested successfully!", input: account, method: HttpMethod.Delete);
 
-	public Task<bool> ResetPassword(ResetPasswordDto account) => SendRequest($"{Endpoint}/password", "Password reset successfully!", input: account, method: HttpMethod.Patch);
+	public Task<ServiceResult<bool>> ResetPassword(ResetPasswordDto account) => SendRequest($"{Endpoint}/password", "Password reset successfully!", input: account, method: HttpMethod.Patch);
 
-	public Task<bool> InitiateEmailChange(InitiateEmailChangeDto account) => SendRequest($"{Endpoint}/email", "Email change requested successfully!", input: account, method: HttpMethod.Post);
+	public Task<ServiceResult<bool>> InitiateEmailChange(InitiateEmailChangeDto account, ClaimsPrincipal p) => SendRequest($"{Endpoint}/email", "Email change requested successfully!", input: account, method: HttpMethod.Post);
 
-	public Task<bool> PerformEmailChange(PerformEmailChangeDto account) => SendRequest($"{Endpoint}/email", "Email changed successfully!", input: account, method: HttpMethod.Patch);
+	public Task<ServiceResult<bool>> PerformEmailChange(PerformEmailChangeDto account, ClaimsPrincipal p) => SendRequest($"{Endpoint}/email", "Email changed successfully!", input: account, method: HttpMethod.Patch);
 
-	public async Task<bool> DeleteAccount()
+	public async Task<ServiceResult<bool>> DeleteAccount(ClaimsPrincipal p)
 	{
 		var deleted = await SendRequest(Endpoint, "Account deleted successfully!", method: HttpMethod.Delete);
-		if (deleted)
+		if (deleted.WasSuccessful)
 		{
 			await _authState.NotifyUserLogout();
 		}
@@ -88,13 +97,25 @@ public class AccountService : BaseHttpService<AccountService>, IAccountService
 		return deleted;
 	}
 
-	public async Task<Stream> GetPersonalData()
+	public async Task<ServiceResult<byte[]>> GetPersonalData(ClaimsPrincipal p)
 	{
 		var result = await SendWithRawResponse($"{Endpoint}/data");
-		return await result.Content.ReadAsStreamAsync();
+		if (!result.IsSuccessStatusCode)
+		{
+			return ServiceResult<byte[]>.Failure("Failed to fetch personal data.");
+		}
+
+		var data = await result.Content.ReadAsStreamAsync();
+
+		// Seems risky, but the data returned should always be relatively small
+		using var ms = new MemoryStream((int)data.Length);
+		await data.CopyToAsync(ms);
+		var bytes = ms.ToArray();
+
+		return ServiceResult<byte[]>.Ok(bytes);
 	}
 
-	public async Task LoadUserInfo()
+	public async Task<ServiceResult<ApplicationUserDto>> GetUserInfo(ClaimsPrincipal p)
 	{
 		Logger.LogInformation("Getting info for the currently logged in user");
 		try
@@ -107,20 +128,20 @@ public class AccountService : BaseHttpService<AccountService>, IAccountService
 			if (result.StatusCode == HttpStatusCode.Unauthorized)
 			{
 				await _authState.NotifyUserLogout();
-				return;
+				return ServiceResult<ApplicationUserDto>.Failure("User is not logged in");
 			}
 
 			// If the result wasn't successful
 			// we don't have a user to store state for
 			if (!result.IsSuccessStatusCode)
 			{
-				return;
+				return ServiceResult<ApplicationUserDto>.Failure("Status code was unsuccessful");
 			}
 
 			var user = await GetResponse<ApplicationUserDto>(result);
 			if (user is null)
 			{
-				return;
+				return ServiceResult<ApplicationUserDto>.Failure("User object was null");
 			}
 
 			_accountState.User = user;
@@ -128,10 +149,13 @@ public class AccountService : BaseHttpService<AccountService>, IAccountService
 		catch (Exception e)
 		{
 			Logger.LogError(e, "Failed to fetch user info");
+			return ServiceResult<ApplicationUserDto>.Failure("Failed to fetch user info");
 		}
+
+		return ServiceResult<ApplicationUserDto>.Ok(_accountState.User);
 	}
 
-	public async Task<bool> Logout()
+	public async Task<ServiceResult<bool>> Logout()
 	{
 		try
 		{
@@ -140,25 +164,9 @@ public class AccountService : BaseHttpService<AccountService>, IAccountService
 		catch (Exception e)
 		{
 			Logger.LogError("Failed to log out user: {}", e.Message);
-			return false;
+			return ServiceResult<bool>.Failure("Failed to log out user");
 		}
 
-		return true;
+		return ServiceResult<bool>.Ok(true);
 	}
-}
-
-public interface IAccountService
-{
-	public Task<bool> Login(LoginDto account);
-	public Task<bool> Register(RegisterDto account);
-	public Task<bool> ConfirmAccount(ConfirmAccountDto account);
-	public Task<bool> ForgotPassword(ForgotPasswordDto account);
-	public Task<bool> ResetPassword(ResetPasswordDto account);
-	public Task<bool> InitiateEmailChange(InitiateEmailChangeDto account);
-	public Task<bool> PerformEmailChange(PerformEmailChangeDto account);
-	public Task<bool> ChangePassword(ChangePasswordDto account);
-	public Task<bool> DeleteAccount();
-	public Task<Stream> GetPersonalData();
-	public Task LoadUserInfo();
-	public Task<bool> Logout();
 }

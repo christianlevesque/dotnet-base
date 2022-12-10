@@ -47,8 +47,8 @@ try
 	AddCustomAuthorization(builder.Services);
 
 	builder.Services
-		.AddServerServices(builder.Environment)
-		.AddServices(builder.Configuration, builder.Environment);
+		.AddServices(builder.Configuration, builder.Environment)
+		.AddServerServices(builder.Environment, builder.Configuration);
 
 	var app = builder.Build();
 
@@ -58,11 +58,11 @@ try
 		app.UseWebAssemblyDebugging();
 	}
 
-	app.UseSerilogRequestLogging();
-	app.UseRouting();
-
 	app.UseBlazorFrameworkFiles();
 	app.UseStaticFiles();
+
+	app.UseSerilogRequestLogging();
+	app.UseRouting();
 
 	if (app.Environment.IsDevelopment())
 	{
@@ -96,25 +96,25 @@ void AddApiAuthentication(IServiceCollection services, IConfiguration config)
 
 	// Set up Authentication
 	services.AddAuthentication(o =>
-	        {
-		        o.DefaultScheme = JwtBearerDefaults.AuthenticationScheme;
-		        o.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
-	        })
-	        .AddJwtBearer(JwtBearerDefaults.AuthenticationScheme,o =>
-	        {
-		        var keyBytes = Encoding.UTF8.GetBytes(jwt["SecurityKey"]);
+	    {
+	        o.DefaultScheme = JwtBearerDefaults.AuthenticationScheme;
+	        o.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+	    })
+	    .AddJwtBearer(JwtBearerDefaults.AuthenticationScheme,o =>
+	    {
+	        var keyBytes = Encoding.UTF8.GetBytes(jwt["SecurityKey"]);
 
-		        o.TokenValidationParameters = new TokenValidationParameters
-		        {
-			        ValidateIssuer = true,
-			        ValidateAudience = true,
-			        ValidateLifetime = true,
-			        ValidateIssuerSigningKey = true,
-			        ValidIssuer = jwt["Issuer"],
-			        ValidAudience = jwt["Audience"],
-			        IssuerSigningKey = new SymmetricSecurityKey(keyBytes)
-		        };
-	        });
+	        o.TokenValidationParameters = new TokenValidationParameters
+	        {
+		        ValidateIssuer = true,
+		        ValidateAudience = true,
+		        ValidateLifetime = true,
+		        ValidateIssuerSigningKey = true,
+		        ValidIssuer = jwt["Issuer"],
+		        ValidAudience = jwt["Audience"],
+		        IssuerSigningKey = new SymmetricSecurityKey(keyBytes)
+	        };
+	    });
 }
 
 void AddCustomAuthorization(IServiceCollection services)

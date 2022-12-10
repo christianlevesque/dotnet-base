@@ -5,12 +5,11 @@ using Core.Users;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
-using Services.Admin;
 
 namespace Server.Controllers;
 
 [ApiController]
-[Route("[controller]")]
+[Route("/api/[controller]")]
 [Authorize(Roles = Roles.Admin)]
 public class UsersController : AppControllerBase<UsersController, IUserAdminService>
 {

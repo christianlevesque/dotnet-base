@@ -58,6 +58,6 @@ public partial class ViewUserData
 
 	protected override async Task OnInitializedAsync()
 	{
-		_user = await SubmitRequest(() => Service.GetUser(UserId));
+		_user = await SubmitRequest(() => Service.GetUserData(UserId));
 	}
 }

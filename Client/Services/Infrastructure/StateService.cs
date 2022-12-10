@@ -3,13 +3,12 @@ using Autoinjector;
 using Microsoft.Extensions.Logging;
 using Core.Infrastructure;
 using Microsoft.Extensions.DependencyInjection;
-using Client.Services.Infrastructure;
+using Core;
 
 namespace Client.Services.Infrastructure;
 
-[Service(ServiceLifetime.Scoped, typeof(IStateService))]
-public class StateService : CrudService<StateDto, StateDto, StateDto, StateService>,
-                            IStateService
+[Service(ServiceLifetime.Scoped, typeof(ICrudService<StateDto>))]
+public class StateService : CrudService<StateDto, StateService>, ICrudService<StateDto>
 {
 	public StateService(HttpClient client,
 	                    ILogger<StateService> logger,
@@ -20,8 +19,4 @@ public class StateService : CrudService<StateDto, StateDto, StateDto, StateServi
 		EditSuccessMessage = "State updated successfully!";
 		DeleteSuccessMessage = "State deleted successfully!";
 	}
-}
-
-public interface IStateService : ICrudService<StateDto, StateDto, StateDto>
-{
 }

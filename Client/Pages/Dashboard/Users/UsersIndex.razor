@@ -6,7 +6,7 @@
 @using Client.Tools
 @using Core.Account
 @using Core
-@inherits ActionPage<UsersIndex, Client.Services.IAdminUserService>
+@inherits ActionPage<UsersIndex, Core.Users.IUserAdminService>
 
 @attribute [Route(Urls.Dashboard.Users.Index)]
 @attribute [Layout(typeof(DashboardLayout))]
@@ -17,7 +17,7 @@
 <TemplatedTable TItem="ApplicationUserDto"
                 TableTitle="Site users"
                 RowTemplate="typeof(AdminUserRowTemplate)"
-                LoadData="Service.GetUsers">
+                LoadData="Service.GetAllUsers">
 	<HeaderContent>
 		<SortLabel For="(ApplicationUserDto u) => u.UserName">
 			Username

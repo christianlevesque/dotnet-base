@@ -1,3 +1,4 @@
+using System.Security.Claims;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Components;
 using Client.Shared;
@@ -29,7 +30,7 @@ public partial class EmailChangeConfirm
 		Model.NewEmail = Email;
 		Model.VerificationCode = Code;
 
-		await SubmitRequest(() => Service.PerformEmailChange(Model));
+		await SubmitRequest(() => Service.PerformEmailChange(Model, new ClaimsPrincipal()));
 		if (WasSuccessful)
 		{
 			NavManager.NavigateTo(Urls.Dashboard.MyAccount.EmailChange.Successful);

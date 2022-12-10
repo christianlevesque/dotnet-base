@@ -1,8 +1,8 @@
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Components;
-using Client.Services;
 using Client.Tools;
+using Core.Account;
 
 namespace Client.Pages.Account;
 
@@ -20,7 +20,8 @@ public partial class Logout
 
 	protected override async Task OnParametersSetAsync()
 	{
-		if (await AccountService.Logout())
+		var result = await AccountService.Logout(); 
+		if (result.WasSuccessful)
 		{
 			NavManager.NavigateTo(Urls.Home);
 		}

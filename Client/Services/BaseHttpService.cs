@@ -50,7 +50,7 @@ public class BaseHttpService<TService>
 		}
 	}
 
-	protected async Task HandleFailureResponse(HttpResponseMessage message)
+	protected async Task<string> HandleFailureResponse(HttpResponseMessage message)
 	{
 		// Try to interpret the response as an ErrorDto
 		// which optimistically assumes that the response
@@ -61,7 +61,7 @@ public class BaseHttpService<TService>
 			if (!string.IsNullOrEmpty(error?.Message))
 			{
 				Snackbar.Error(error.Message);
-				return;
+				return error.Message;
 			}
 		}
 		catch (Exception e)
@@ -69,28 +69,35 @@ public class BaseHttpService<TService>
 			Logger.LogError(e, "Unable to deserialize to ErrorDto");
 		}
 
+		string errorMessage;
 		// Otherwise, use the status code
 		// to generate an error message
 		switch (message.StatusCode)
 		{
 			case HttpStatusCode.BadRequest:
 				Logger.LogError("The request payload was not understood: {}", await message.Content.ReadAsStringAsync());
-				Snackbar.Error("The request was malformed. Please try again. If you continue to have problems, contact IT.");
+				errorMessage = "The request was malformed. Please try again. If you continue to have problems, contact IT.";
 				break;
 			case HttpStatusCode.UnprocessableEntity:
 				Logger.LogError("There was a problem with the request data: {}", await message.Content.ReadAsStringAsync());
-				Snackbar.Error("There was a problem with the data you entered. Please check for errors and try again");
+				errorMessage = "There was a problem with the data you entered. Please check for errors and try again";
 				break;
 			default:
-				Snackbar.Error("An unknown problem occurred. If you continue to have problems, contact IT.");
+				Logger.LogError("An unknown problem occurred: {}", await message.Content.ReadAsStringAsync());
+				errorMessage = "An unknown problem occurred. If you continue to have problems, contact IT.";
 				break;
 		}
+
+		Snackbar.Error(errorMessage);
+
+		return errorMessage;
 	}
 
-	protected async Task<bool> SendRequest(string endpoint, string successMessage, object? input = null, HttpMethod? method = null)
+	protected async Task<ServiceResult<bool>> SendRequest(string endpoint, string successMessage, object? input = null, HttpMethod? method = null)
 	{
 		method ??= HttpMethod.Get;
 		var message = CreateRequestMessage(method, endpoint, input);
+		string errorMessage;
 
 		try
 		{
@@ -98,23 +105,25 @@ public class BaseHttpService<TService>
 			if (result.IsSuccessStatusCode)
 			{
 				Snackbar.Success(successMessage);
-				return true;
+				return ServiceResult<bool>.Ok(true);
 			}
 
-			await HandleFailureResponse(result);
+			errorMessage = await HandleFailureResponse(result);
 		}
 		catch (Exception e)
 		{
 			HandleException(e);
+			errorMessage = "HTTP request failed";
 		}
 
-		return false;
+		return ServiceResult<bool>.Failure(errorMessage);
 	}
 
-	protected async Task<TReturn?> SendRequest<TReturn>(string endpoint, string? successMessage = null, object? input = null, HttpMethod? method = null)
+	protected async Task<ServiceResult<TReturn>> SendRequest<TReturn>(string endpoint, string? successMessage = null, object? input = null, HttpMethod? method = null)
 	{
 		method ??= HttpMethod.Get;
 		var message = CreateRequestMessage(method, endpoint, input);
+		string errorMessage;
 
 		try
 		{
@@ -128,21 +137,24 @@ public class BaseHttpService<TService>
 					{
 						Snackbar.Success(successMessage);
 					}
-					return parsedResponse;
+					return ServiceResult<TReturn>.Ok(parsedResponse);
 				}
 
-				Snackbar.Error("The request was successful, but the server's response was not understood.");
-				return default;
+				errorMessage = "The request was successful, but the server's response was not understood.";
 			}
-
-			await HandleFailureResponse(result);
+			else
+			{
+				errorMessage = await HandleFailureResponse(result);
+			}
 		}
 		catch (Exception e)
 		{
 			HandleException(e);
+			errorMessage = "An unknown error occurred.";
 		}
 
-		return default;
+		Snackbar.Error(errorMessage);
+		return ServiceResult<TReturn>.Failure(errorMessage);
 	}
 
 	protected async Task<TReturn?> SendRequest<TReturn, TInput>(string endpoint, TInput input, HttpMethod? method = null)
@@ -186,7 +198,7 @@ public class BaseHttpService<TService>
 
 	protected Task<HttpResponseMessage> Send(HttpRequestMessage payload)
 	{
-		Logger.LogInformation("Sending {method} request to {endpoint}", payload.Method, payload.RequestUri);
+		Logger.LogInformation("Sending {method} request to {base}/{endpoint}", payload.Method, Client.BaseAddress, payload.RequestUri);
 		return Client.SendAsync(payload);
 	}
 

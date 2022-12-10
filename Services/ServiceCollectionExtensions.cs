@@ -16,9 +16,9 @@ namespace Services;
 
 public static class ServiceCollectionExtensions
 {
-	public static void AddServices(this IServiceCollection services, IConfiguration config, IWebHostEnvironment env)
+	public static IServiceCollection AddServices(this IServiceCollection services, IConfiguration config, IWebHostEnvironment env)
 	{
-		services
+		return services
 			.AddCustomDatabase(config)
 			.AddCustomIdentity()
 			.ConfigureCustomIdentity()
@@ -86,11 +86,11 @@ public static class ServiceCollectionExtensions
 			.Configure<JwtOptions>(config.GetSection("Jwt")); // TODO: remove or disable if using SSR
 	}
 
-	private static void AddApplicationServices(this IServiceCollection services, IConfiguration config)
+	private static IServiceCollection AddApplicationServices(this IServiceCollection services, IConfiguration config)
 	{
-		services
+		return services
 			.AddScoped<ISendGridClient>(p => new SendGridClient(config["Email:ApiKey"]))
 			.AutoinjectServicesFromAssembly(typeof(IRepository<>).Assembly)
-			.AutoinjectServicesFromAssembly(typeof(ICrudService<>).Assembly);
+			.AutoinjectServicesFromAssembly(typeof(ServiceCollectionExtensions).Assembly);
 	}
 }

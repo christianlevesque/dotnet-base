@@ -5,12 +5,11 @@ using Core;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
-using Services;
 
 namespace Server.Controllers;
 
 [ApiController]
-[Route("/[controller]")]
+[Route("/api/[controller]")]
 public class CrudControllerBase<TController, TService, TDto>
 	: AppControllerBase<TController, TService>
 	where TController : ControllerBase

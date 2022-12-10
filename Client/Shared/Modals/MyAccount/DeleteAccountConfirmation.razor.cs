@@ -1,3 +1,4 @@
+using System.Security.Claims;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Components;
 using MudBlazor;
@@ -12,7 +13,7 @@ public partial class DeleteAccountConfirmation
 
 	private async Task HandleSubmit()
 	{
-		await SubmitRequest(() => Service.DeleteAccount());
+		await SubmitRequest(() => Service.DeleteAccount(new ClaimsPrincipal()));
 		if (WasSuccessful)
 		{
 			NavManager.NavigateTo(Urls.Account.Deleted);

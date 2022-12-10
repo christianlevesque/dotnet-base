@@ -1,6 +1,6 @@
 ﻿@using Core.Infrastructure;
 @using Client.Tools
-@inherits FormPage<EditStateData, Client.Services.Infrastructure.IStateService, StateDto>
+@inherits FormPage<EditStateData, Core.ICrudService<StateDto>, StateDto>
 
 <DocTitle Title="@($"Edit {Model.Name}")"></DocTitle>
 

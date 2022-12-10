@@ -98,7 +98,7 @@ public class ServiceResult<T>
 
 	public ServiceError ServiceError { get; private init; }
 
-	public T? Result { get; private init; }
+	public T? Result { get; set; }
 
 	public string? ErrorMessage { get; set; }
 }

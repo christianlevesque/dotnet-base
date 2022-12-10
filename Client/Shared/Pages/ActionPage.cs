@@ -1,5 +1,6 @@
 using System;
 using System.Threading.Tasks;
+using Core;
 using Microsoft.AspNetCore.Components;
 using Microsoft.Extensions.Logging;
 
@@ -12,7 +13,7 @@ public abstract class ActionPage<TPage, TService, TModel> : ActionPage<TPage, TS
 	protected TModel Model = new ();
 }
 
-public abstract class ActionPage<TPage, TService> : ComponentBase 
+public abstract class ActionPage<TPage, TService> : ComponentBase
 	where TPage : ComponentBase
 {
 	private int _counter;
@@ -32,21 +33,7 @@ public abstract class ActionPage<TPage, TService> : ComponentBase
 	[Inject]
 	protected TService Service { get; set; } = default!;
 
-	protected async Task SubmitRequest(Func<Task<bool>> submitFunc)
-	{
-		WasSuccessful = false;
-
-		Logger.LogInformation("Submitting service request");
-
-		// Do the work
-		_counter++;
-		WasSuccessful = await submitFunc();
-		--_counter;
-
-		Logger.LogInformation("Service request submitted");
-	}
-
-	protected async Task<TReturn> SubmitRequest<TReturn>(Func<Task<TReturn>> submitFunc)
+	protected async Task<TReturn?> SubmitRequest<TReturn>(Func<Task<ServiceResult<TReturn>>> submitFunc)
 	{
 		WasSuccessful = false;
 
@@ -58,9 +45,9 @@ public abstract class ActionPage<TPage, TService> : ComponentBase
 
 		Logger.LogInformation("Service request submitted");
 
-		WasSuccessful = result is not null;
+		WasSuccessful = result.WasSuccessful;
 
-		return result;
+		return result.Result;
 	}
 
 	protected void ResetError()

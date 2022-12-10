@@ -1,3 +1,4 @@
+using System.Security.Claims;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Components;
 using Client.Shared;
@@ -11,7 +12,7 @@ public partial class PasswordChangeIndex
 {
 	protected override async Task OnSubmit()
 	{
-		await SubmitRequest(() => Service.ChangePassword(Model));
+		await SubmitRequest(() => Service.ChangePassword(Model, new ClaimsPrincipal()));
 		if (WasSuccessful)
 		{
 			NavManager.NavigateTo(Urls.Dashboard.MyAccount.PasswordChange.Successful);

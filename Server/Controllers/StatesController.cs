@@ -1,9 +1,7 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.Extensions.Logging;
-using Services.Infrastructure;
 using Core;
 using Core.Infrastructure;
-using Services;
 
 namespace Server.Controllers;
 

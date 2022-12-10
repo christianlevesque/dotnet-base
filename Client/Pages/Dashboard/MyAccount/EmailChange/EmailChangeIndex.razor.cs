@@ -1,9 +1,7 @@
+using System.Security.Claims;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Components;
-using Core.Account;
-using Client.Services;
 using Client.Shared;
-using Client.Shared.Pages;
 using Client.Tools;
 
 namespace Client.Pages.Dashboard.MyAccount.EmailChange;
@@ -14,7 +12,7 @@ public partial class EmailChangeIndex
 {
 	protected override async Task OnSubmit()
 	{
-		await SubmitRequest(() => Service.InitiateEmailChange(Model));
+		await SubmitRequest(() => Service.InitiateEmailChange(Model, new ClaimsPrincipal()));
 		if (WasSuccessful)
 		{
 			NavManager.NavigateTo(Urls.Dashboard.MyAccount.EmailChange.Requested);

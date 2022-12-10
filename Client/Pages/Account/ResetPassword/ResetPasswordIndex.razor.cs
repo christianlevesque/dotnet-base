@@ -1,9 +1,7 @@
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Components;
-using Microsoft.Extensions.Logging;
 using Core.Account;
-using Client.Services;
 using Client.Shared;
 using Client.Shared.Pages;
 using Client.Tools;

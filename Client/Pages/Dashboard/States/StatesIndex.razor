@@ -6,7 +6,7 @@
 @using Client.Tools
 @using Core
 @using Core.Infrastructure
-@inherits ActionPage<StatesIndex, Client.Services.Infrastructure.IStateService>
+@inherits ActionPage<StatesIndex, Core.ICrudService<StateDto>>
 
 @attribute [Route(Urls.Dashboard.States.Index)]
 @attribute [Layout(typeof(DashboardLayout))]

@@ -1,9 +1,11 @@
+using System.Security.Claims;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.Extensions.Logging;
 using Client.Services;
 using Client.State;
+using Core.Account;
 
 namespace Client.Shared;
 
@@ -31,7 +33,7 @@ public partial class AppInitializer
 		if ((await AuthState).User.Identity?.IsAuthenticated ?? false)
 		{
 			LoadingStateProvider.AddLoadingOperation();
-			await AccountService.LoadUserInfo();
+			await AccountService.GetUserInfo(new ClaimsPrincipal());
 			LoadingStateProvider.RemoveLoadingOperation();
 		}
 	}

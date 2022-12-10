@@ -4,11 +4,10 @@ using Core.Account;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
-using Services.Identity;
 
 namespace Server.Controllers;
 
-[Route("[controller]")]
+[Route("/api/[controller]")]
 [ApiController]
 [Authorize]
 public class AccountController : AppControllerBase<AccountController, IAccountService>

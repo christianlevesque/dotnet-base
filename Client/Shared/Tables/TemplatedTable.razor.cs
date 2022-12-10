@@ -42,7 +42,7 @@ public partial class TemplatedTable<TItem>
 	public RenderFragment? HeaderContent { get; set; }
 
 	[Parameter]
-	public Func<Filter?, Task<PagedDto<TItem>>> LoadData { get; set; } = default!;
+	public Func<Filter?, Task<ServiceResult<PagedDto<TItem>>>> LoadData { get; set; } = default!;
 
 	private MudTable<TItem> Table { get; set; } = default!;
 	private bool _loading;
@@ -86,7 +86,7 @@ public partial class TemplatedTable<TItem>
 			filter.SearchTerm = SearchTerm;
 		}
 
-		var result = await LoadData(filter);
+		var result = ((await LoadData(filter)).Result)!;
 		_loading = false;
 
 		return new TableData<TItem>

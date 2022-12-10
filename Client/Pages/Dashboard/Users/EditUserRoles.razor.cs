@@ -1,7 +1,6 @@
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Components;
-using Microsoft.Extensions.Logging;
 using Core;
 using Core.Account;
 using Client.Shared;
@@ -24,13 +23,13 @@ public partial class EditUserRoles
 
 	protected override async Task OnInitializedAsync()
 	{
-		_user = await SubmitRequest(() => Service.GetUser(UserId));
+		_user = await SubmitRequest(() => Service.GetUserData(UserId));
 		Model.UserId = UserId;
 	}
 
 	protected override async Task OnSubmit()
 	{
 		Model.Roles = _aggregator.GetSelected();
-		await SubmitRequest(() => Service.UpdateUserRoles(Model));
+		await SubmitRequest(() => Service.AddUserToRole(Model));
 	}
 }
