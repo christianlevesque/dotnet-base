@@ -51,7 +51,7 @@ public class UserRepository : RepositoryBase<ApplicationUser, string>, IUserRepo
 	{
 		nameof(ApplicationUser.UserName) => u => u.UserName,
 		nameof(ApplicationUser.Email) => u => u.Email,
-		_ => throw ColumnNotSupported(sortName)
+		_ => u => u.UserName
 	};
 }
 
