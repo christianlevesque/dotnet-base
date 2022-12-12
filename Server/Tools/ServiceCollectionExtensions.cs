@@ -1,6 +1,7 @@
 using System;
 using Client.State;
 using Client.Tools.Options;
+using Core.Infrastructure;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
@@ -64,7 +65,8 @@ public static class ServiceCollectionExtensions
 			o.TokenLifespan = TimeSpan.FromDays(30);
 		});
 
-		services.Configure<SiteOptions>(config.GetSection("Site"));
+		services.Configure<SiteOptions>(config.GetSection("Site"))
+			.Configure<SharedDataOptions>(config.GetSection("SharedData"));
 
 		return services;
 	}

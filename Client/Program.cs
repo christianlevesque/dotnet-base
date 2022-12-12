@@ -9,6 +9,7 @@ using Microsoft.Extensions.Options;
 using MudBlazor.Services;
 using Client;
 using Client.Tools.Options;
+using Core.Infrastructure;
 using Microsoft.Extensions.Configuration;
 
 var builder = WebAssemblyHostBuilder.CreateDefault(args);
@@ -31,6 +32,10 @@ static void ConfigureServices(IServiceCollection services, IConfiguration config
 		{
 			o.Name = config.GetSection("Site:Name").Value;
 			o.Url = config.GetSection("Site:Url").Value;
+		})
+		.Configure<SharedDataOptions>(o =>
+		{
+			o.IsServer = bool.Parse(config.GetSection("SharedData:IsServer").Value);
 		})
 		.AddAuthorizationCore()
 		.AddBlazoredLocalStorage()
