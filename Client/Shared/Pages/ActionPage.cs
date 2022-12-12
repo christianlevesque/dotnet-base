@@ -13,7 +13,7 @@ public abstract class ActionPage<TPage, TService, TModel> : ActionPage<TPage, TS
 	protected TModel Model = new ();
 }
 
-public abstract class ActionPage<TPage, TService> : ComponentBase
+public abstract class ActionPage<TPage, TService> : PersistentStatePage<TPage>
 	where TPage : ComponentBase
 {
 	private int _counter;
@@ -54,4 +54,9 @@ public abstract class ActionPage<TPage, TService> : ComponentBase
 	{
 		ErrorMessage = null;
 	}
+
+	// Not all action or form pages will need this
+	// But some do, so we need to inherit PersistentStatePage
+	// and create a default implementation of SaveState()
+	protected override void SaveState() {}
 }
