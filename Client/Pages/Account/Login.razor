@@ -31,3 +31,14 @@
 		</SecondaryButton>
 	</MoreActions>
 </StandardForm>
+
+<MudOverlay Visible="_validatingLogin"
+            DarkBackground
+            Absolute>
+	<MudPaper Class="py-5 px-10">
+		<MudText Class="mb-5">Validating your login. Please wait...</MudText>
+		<div class="d-flex">
+			<LoadingSpinner Class="mx-auto"/>
+		</div>
+	</MudPaper>
+</MudOverlay>
